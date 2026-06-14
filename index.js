@@ -1,5 +1,5 @@
 import express from "express";
-import { MovieboxSession, searchMovies, getMovieDetail, downloadMovie } from "moviebox-js-sdk";
+import { MovieboxSession, search, getMovieDetails, getMovieStreamUrl } from "moviebox-js-sdk";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -16,7 +16,7 @@ app.get("/", (req, res) => {
   res.json({
     status: "ok",
     message: "Cymor MovieBox test API is running",
-    routes: ["/health", "/search?q=avatar", "/detail?path=<detailPath>"]
+    routes: ["/health", "/search?q=avatar", "/detail?path=<detailPath>", "/stream?path=<detailPath>"]
   });
 });
 
@@ -28,7 +28,7 @@ app.get("/health", (req, res) => {
 app.get("/search", async (req, res) => {
   const query = req.query.q || "Avatar";
   try {
-    const results = await searchMovies(session, { keyword: query, page: 1 });
+    const results = await search(session, { query });
     res.json({ ok: true, query, results });
   } catch (err) {
     res.status(500).json({
@@ -40,7 +40,7 @@ app.get("/search", async (req, res) => {
   }
 });
 
-// Test 2: get details + stream links for a known item
+// Test 2: get details for a known item
 // detailPath comes from a /search result, e.g. "titanic-m7a9yt0abq6"
 app.get("/detail", async (req, res) => {
   const detailPath = req.query.path;
@@ -48,12 +48,32 @@ app.get("/detail", async (req, res) => {
     return res.status(400).json({ ok: false, error: "Pass ?path=<detailPath> from a /search result" });
   }
   try {
-    const detail = await getMovieDetail(session, { detailPath });
+    const detail = await getMovieDetails(session, { detailPath });
     res.json({ ok: true, detailPath, detail });
   } catch (err) {
     res.status(500).json({
       ok: false,
       step: "detail",
+      error: err.message,
+      stack: err.stack
+    });
+  }
+});
+
+// Test 3: get direct stream URL for a known item
+app.get("/stream", async (req, res) => {
+  const detailPath = req.query.path;
+  const quality = req.query.quality || "best";
+  if (!detailPath) {
+    return res.status(400).json({ ok: false, error: "Pass ?path=<detailPath> from a /search result" });
+  }
+  try {
+    const stream = await getMovieStreamUrl(session, { detailPath, quality });
+    res.json({ ok: true, detailPath, quality, stream });
+  } catch (err) {
+    res.status(500).json({
+      ok: false,
+      step: "stream",
       error: err.message,
       stack: err.stack
     });
