@@ -14,9 +14,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 
 # ── V3 imports ────────────────────────────────────────────────────────────────
+# Note: v3 does NOT have MovieAuto/TVSeriesAuto - those are v1 only
 from moviebox_api.v3 import (
-    MovieAuto,
-    TVSeriesAuto,
     Search,
     Session,
     SubjectType,
@@ -37,7 +36,9 @@ os.makedirs(DOWNLOAD_DIR, exist_ok=True)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    import moviebox_api.v3 as v3mod
     print("🎬 Cymor MovieBox API v3 starting...")
+    print(f"   v3 exports: {[x for x in dir(v3mod) if not x.startswith('_')]}")
     yield
     print("🛑 Cymor MovieBox API shutting down...")
 
