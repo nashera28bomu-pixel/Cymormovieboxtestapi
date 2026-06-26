@@ -96,17 +96,12 @@ async def run_download(
             download_jobs[job_id]["found_title"] = getattr(first_item, "name", title)
             download_jobs[job_id]["status"] = "fetching_details"
 
-            details = await ItemDetails(first_item, http_client=http).get_content_model()
+            details = await ItemDetails(first_item, http).get_content_model()
 
             if is_series:
-                dl_detail = await SeasonDetails(
-                    http_client=http, item_details=details,
-                    season=season, episode=episode,
-                ).get_content_model()
+                dl_detail = await SeasonDetails(http, details, season, episode).get_content_model()
             else:
-                dl_detail = await DownloadableFilesDetail(
-                    http_client=http, item_details=details,
-                ).get_content_model()
+                dl_detail = await DownloadableFilesDetail(http, details).get_content_model()
 
             # Pick quality + dub
             media_file = None
@@ -236,8 +231,8 @@ async def movie_files(title: str = Query(...)):
             if not results.items:
                 raise HTTPException(status_code=404, detail=f"No movie found for '{title}'")
             item = results.first_item
-            details = await ItemDetails(item, http_client=http).get_content_model()
-            dl = await DownloadableFilesDetail(http_client=http, item_details=details).get_content_model()
+            details = await ItemDetails(item, http).get_content_model()
+            dl = await DownloadableFilesDetail(http, details).get_content_model()
         return {
             **s_item(item),
             "videos": [s_video(f) for f in dl.downloads],
@@ -257,8 +252,8 @@ async def series_files(title: str = Query(...), season: int = Query(1, ge=1), ep
             if not results.items:
                 raise HTTPException(status_code=404, detail=f"No series found for '{title}'")
             item = results.first_item
-            details = await ItemDetails(item, http_client=http).get_content_model()
-            dl = await SeasonDetails(http_client=http, item_details=details, season=season, episode=episode).get_content_model()
+            details = await ItemDetails(item, http).get_content_model()
+            dl = await SeasonDetails(http, details, season, episode).get_content_model()
         return {
             **s_item(item),
             "season": season, "episode": episode,
